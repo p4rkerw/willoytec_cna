@@ -108,38 +108,41 @@ done
 
 for sample in "${tumors[@]}"; do
   docker run --rm \
-    -v "$workdir":/data \
+    -v $workdir/cnvkit_output:/cnvkit_output \
     -v "$ref_dir":/ref \
     -w /data \
+    -w $workdir \
     $cnvkit_docker \
     cnvkit.py scatter \
-      cnvkit_output/${sample}.cnr \
-      -s cnvkit_output/${sample}.cns \
-      -o cnvkit_output/${sample}.scatter.pdf
+      /cnvkit_output/${sample}.dedup.cnr \
+      -s /cnvkit_output/${sample}.dedup.cns \
+      -o /cnvkit_output/${sample}.dedup.scatter.pdf
 done
 
 for sample in "${tumors[@]}"; do
   docker run --rm \
-    -v "$workdir":/data \
+    -v $workdir/cnvkit_output:/cnvkit_output \
     -v "$ref_dir":/ref \
     -w /data \
+    -w $workdir \
     $cnvkit_docker \
     cnvkit.py genemetrics \
-      cnvkit_output/${sample}.cnr \
-      -s cnvkit_output/${sample}.cns \
-      > cnvkit_output/${sample}.genemetrics.txt
+      /cnvkit_output/${sample}.dedup.cnr \
+      -s /cnvkit_output/${sample}.dedup.cns \
+      > /cnvkit_output/${sample}.dedup.genemetrics.txt
 
   docker run --rm \
-    -v "$workdir":/data \
+    -v $workdir/cnvkit_output:/cnvkit_output \
     -v "$ref_dir":/ref \
     -w /data \
+    -w $workdir \
     $cnvkit_docker \
     cnvkit.py call \
-      cnvkit_output/${sample}.cns \
-      -o cnvkit_output/${sample}.call.cns
+      /cnvkit_output/${sample}.dedup.cns \
+      -o /cnvkit_output/${sample}.dedup.call.cns
 done
 
 for sample in "${tumors[@]}"; do
   echo "==== $sample chrY ===="
-  grep -w "chrY" cnvkit_output/${sample}.cns || true
+  grep -w "chrY" /cnvkit_output/${sample}.dedup.cns || true
 done
