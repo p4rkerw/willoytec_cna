@@ -146,3 +146,71 @@ for sample in "${tumors[@]}"; do
   echo "==== $sample chrY ===="
   grep -w "chrY" cnvkit_output/${sample}.dedup.cns || true
 done
+
+for sample in "${tumors[@]}"; do
+  echo "Summarizing chromosome-level CNAs for $sample"
+
+  awk '
+  BEGIN{OFS="\t"}
+
+  # -------- PASS 1: collect values --------
+  NR==FNR {
+    if ($1=="chromosome") next
+
+    chr=$1
+    len=$3-$2
+    val=$5
+
+    # weighted mean accumulators
+    sum[chr]+=len*val
+    total[chr]+=len
+
+    # store for median (segment-level, unweighted)
+    vals[chr][n[chr]++]=val
+
+    next
+  }
+
+  # -------- PASS 2: compute + print --------
+  FNR==1 {
+    print "chromosome","mean_log2","median_log2"
+    next
+  }
+
+  END {
+    for (c in sum) {
+
+      # sort values for median
+      asort(vals[c])
+
+      nvals=n[c]
+      if (nvals==0) {
+        med="NA"
+      } else if (nvals%2==1) {
+        med=vals[c][(nvals+1)/2]
+      } else {
+        med=(vals[c][nvals/2]+vals[c][nvals/2+1])/2
+      }
+
+      mean=sum[c]/total[c]
+
+      print c, mean, med
+    }
+  }
+  ' cnvkit_output/${sample}.dedup.cns \
+  > cnvkit_output/${sample}.chromosome_summary.txt
+
+done
+
+for sample in "${tumors[@]}"; do
+  echo "==== Large CNAs (MEAN) in $sample ===="
+  awk 'NR>1 && ($2 > 0.4 || $2 < -0.4)' \
+    cnvkit_output/${sample}.chromosome_summary.txt
+done
+
+for sample in "${tumors[@]}"; do
+  echo "==== Large CNAs (MEDIAN) in $sample ===="
+  awk 'NR>1 && ($3 > 0.4 || $3 < -0.4)' \
+    cnvkit_output/${sample}.chromosome_summary.txt
+done
+
