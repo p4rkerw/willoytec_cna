@@ -144,5 +144,5 @@ done
 
 for sample in "${tumors[@]}"; do
   echo "==== $sample chrY ===="
-  grep -w "chrY" /cnvkit_output/${sample}.dedup.cns || true
+  grep -w "chrY" cnvkit_output/${sample}.dedup.cns || true
 done
